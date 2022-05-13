@@ -1315,6 +1315,18 @@ nvv4l2enc_encode(AVCodecContext *avctx, AVPacket *pkt,
         }
     }
 
+    if (frame->pict_type == AV_PICTURE_TYPE_I)
+    {
+        if (nvv4l2_set_ext_controls(ctx->fd, V4L2_CID_MPEG_MFC51_VIDEO_FORCE_FRAME_TYPE,
+                                    V4L2_CTRL_CLASS_MPEG,
+                                    V4L2_MPEG_MFC51_VIDEO_FORCE_FRAME_TYPE_I_FRAME))
+        {
+            av_log(avctx, AV_LOG_ERROR,
+                   "Failed to set forced I frame!\n");
+            ctx->in_error = true;
+        }
+    }
+
     if (ctx->in_error)
     {
         return AVERROR_UNKNOWN;
