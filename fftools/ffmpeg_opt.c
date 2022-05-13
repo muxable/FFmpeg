@@ -750,6 +750,25 @@ static AVCodec *choose_decoder(OptionsContext *o, AVFormatContext *s, AVStream *
     char *codec_name = NULL;
 
     MATCH_PER_STREAM_OPT(codec_names, str, codec_name, s, st);
+
+#if CONFIG_NVV4L2
+    /* Reset requested decoder in order to enforce NVV4L2 if possible. */
+    if (codec_name) {
+        if (strcmp(codec_name, "h264") == 0)
+            return avcodec_find_decoder(st->codecpar->codec_id);   
+        else if (strcmp(codec_name, "hevc") == 0)
+            return avcodec_find_decoder(st->codecpar->codec_id);
+        else if (strcmp(codec_name, "mpeg2video") == 0)
+            return avcodec_find_decoder(st->codecpar->codec_id);
+        else if (strcmp(codec_name, "mpeg4") == 0)
+            return avcodec_find_decoder(st->codecpar->codec_id);
+        else if (strcmp(codec_name, "vp8") == 0)
+            return avcodec_find_decoder(st->codecpar->codec_id);
+        else if (strcmp(codec_name, "vp9") == 0 && st->codecpar->format != AV_PIX_FMT_YUV420P10)
+            return avcodec_find_decoder(st->codecpar->codec_id);
+    }
+#endif
+
     if (codec_name) {
         AVCodec *codec = find_codec_or_die(codec_name, st->codecpar->codec_type, 0);
         st->codecpar->codec_id = codec->id;

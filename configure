@@ -219,6 +219,8 @@ External library support:
   --enable-ladspa          enable LADSPA audio filtering [no]
   --enable-libaom          enable AV1 video encoding/decoding via libaom [no]
   --enable-libaribb24      enable ARIB text and caption decoding via libaribb24 [no]
+  --enable-libwz265        enable H265 video encoding via libwz265 [no]
+  --enable-nvv4l2          enable Nvidia NVV4L2 support [no]
   --enable-libass          enable libass subtitles rendering,
                            needed for subtitles and ass filter [no]
   --enable-libbluray       enable BluRay reading using libbluray [no]
@@ -1762,6 +1764,7 @@ EXTERNAL_LIBRARY_LIST="
     jni
     ladspa
     libaom
+    libwz265
     libass
     libbluray
     libbs2b
@@ -1836,6 +1839,7 @@ HWACCEL_AUTODETECT_LIBRARY_LIST="
     ffnvcodec
     nvdec
     nvenc
+    nvv4l2
     vaapi
     vdpau
     videotoolbox
@@ -3024,6 +3028,8 @@ qsvenc_select="qsv"
 qsvvpp_select="qsv"
 vaapi_encode_deps="vaapi"
 v4l2_m2m_deps="linux_videodev2_h sem_timedwait"
+nvv4l2_deps="libv4l2 pthreads linux_videodev2_h"
+nvv4l2_extralibs="-lnvbuf_utils"
 
 hwupload_cuda_filter_deps="ffnvcodec"
 scale_npp_filter_deps="ffnvcodec libnpp"
@@ -3053,6 +3059,9 @@ h264_mediacodec_decoder_select="h264_mp4toannexb_bsf h264_parser"
 h264_mf_encoder_deps="mediafoundation"
 h264_mmal_decoder_deps="mmal"
 h264_nvenc_encoder_deps="nvenc"
+h264_nvv4l2_encoder_deps="nvv4l2"
+h264_nvv4l2_decoder_deps="nvv4l2"
+h264_nvv4l2_decoder_select="h264_mp4toannexb_bsf"
 h264_omx_encoder_deps="omx"
 h264_qsv_decoder_select="h264_mp4toannexb_bsf qsvdec"
 h264_qsv_encoder_select="qsvenc"
@@ -3069,6 +3078,9 @@ hevc_mediacodec_decoder_deps="mediacodec"
 hevc_mediacodec_decoder_select="hevc_mp4toannexb_bsf hevc_parser"
 hevc_mf_encoder_deps="mediafoundation"
 hevc_nvenc_encoder_deps="nvenc"
+hevc_nvv4l2_encoder_deps="nvv4l2"
+hevc_nvv4l2_decoder_deps="nvv4l2"
+hevc_nvv4l2_decoder_select="hevc_mp4toannexb_bsf"
 hevc_qsv_decoder_select="hevc_mp4toannexb_bsf qsvdec"
 hevc_qsv_encoder_select="hevcparse qsvenc"
 hevc_rkmpp_decoder_deps="rkmpp"
@@ -3091,6 +3103,7 @@ mpeg2_crystalhd_decoder_select="crystalhd"
 mpeg2_cuvid_decoder_deps="cuvid"
 mpeg2_mmal_decoder_deps="mmal"
 mpeg2_mediacodec_decoder_deps="mediacodec"
+mpeg2_nvv4l2_decoder_deps="nvv4l2"
 mpeg2_qsv_decoder_select="qsvdec"
 mpeg2_qsv_encoder_select="qsvenc"
 mpeg2_vaapi_encoder_select="cbs_mpeg2 vaapi_encode"
@@ -3099,6 +3112,7 @@ mpeg4_crystalhd_decoder_select="crystalhd"
 mpeg4_cuvid_decoder_deps="cuvid"
 mpeg4_mediacodec_decoder_deps="mediacodec"
 mpeg4_mmal_decoder_deps="mmal"
+mpeg4_nvv4l2_decoder_deps="nvv4l2"
 mpeg4_omx_encoder_deps="omx"
 mpeg4_v4l2m2m_decoder_deps="v4l2_m2m mpeg4_v4l2_m2m"
 mpeg4_v4l2m2m_encoder_deps="v4l2_m2m mpeg4_v4l2_m2m"
@@ -3112,6 +3126,7 @@ vc1_qsv_decoder_select="qsvdec"
 vc1_v4l2m2m_decoder_deps="v4l2_m2m vc1_v4l2_m2m"
 vp8_cuvid_decoder_deps="cuvid"
 vp8_mediacodec_decoder_deps="mediacodec"
+vp8_nvv4l2_decoder_deps="nvv4l2"
 vp8_qsv_decoder_select="qsvdec"
 vp8_rkmpp_decoder_deps="rkmpp"
 vp8_vaapi_encoder_deps="VAEncPictureParameterBufferVP8"
@@ -3120,6 +3135,7 @@ vp8_v4l2m2m_decoder_deps="v4l2_m2m vp8_v4l2_m2m"
 vp8_v4l2m2m_encoder_deps="v4l2_m2m vp8_v4l2_m2m"
 vp9_cuvid_decoder_deps="cuvid"
 vp9_mediacodec_decoder_deps="mediacodec"
+vp9_nvv4l2_decoder_deps="nvv4l2"
 vp9_qsv_decoder_select="qsvdec"
 vp9_rkmpp_decoder_deps="rkmpp"
 vp9_vaapi_encoder_deps="VAEncPictureParameterBufferVP9"
@@ -3200,6 +3216,7 @@ libaom_av1_decoder_deps="libaom"
 libaom_av1_encoder_deps="libaom"
 libaom_av1_encoder_select="extract_extradata_bsf"
 libaribb24_decoder_deps="libaribb24"
+libwz265_encoder_deps="libwz265"
 libcelt_decoder_deps="libcelt"
 libcodec2_decoder_deps="libcodec2"
 libcodec2_encoder_deps="libcodec2"
@@ -3389,6 +3406,7 @@ kmsgrab_indev_deps="libdrm"
 lavfi_indev_deps="avfilter"
 libcdio_indev_deps="libcdio"
 libdc1394_indev_deps="libdc1394"
+nvv4l2_indev_deps="v4l2"
 openal_indev_deps="openal"
 opengl_outdev_deps="opengl"
 opengl_outdev_suggest="sdl2"
@@ -6285,6 +6303,10 @@ enabled libaom            && require_pkg_config libaom "aom >= 1.0.0" aom/aom_co
 enabled libaribb24        && { check_pkg_config libaribb24 "aribb24 > 1.0.3" "aribb24/aribb24.h" arib_instance_new ||
                                { enabled gpl && require_pkg_config libaribb24 aribb24 "aribb24/aribb24.h" arib_instance_new; } ||
                                die "ERROR: libaribb24 requires version higher than 1.0.3 or --enable-gpl."; }
+enabled libwz265          && require libwz265 wz265/wz265enc.h wz265_encoder_open -lwz265 -lm
+enabled nvv4l2 && add_ldflags '-L/usr/lib/aarch64-linux-gnu/tegra' \
+               && check_headers linux/videodev2.h \
+               && require_pkg_config libv4l2 libv4l2 libv4l2.h v4l2_ioctl
 enabled lv2               && require_pkg_config lv2 lilv-0 "lilv/lilv.h" lilv_world_new
 enabled libiec61883       && require libiec61883 libiec61883/iec61883.h iec61883_cmp_connect -lraw1394 -lavc1394 -lrom1394 -liec61883
 enabled libass            && require_pkg_config libass libass ass/ass.h ass_library_init
