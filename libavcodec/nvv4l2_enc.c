@@ -462,6 +462,18 @@ nvv4l2_ctx_t *nvv4l2_create_encoder(AVCodecContext *avctx,
                 ctx->in_error = true;
             }
         }
+
+        /* Set frame-level rate control. */
+        ret = nvv4l2_set_ext_controls(ctx->fd,
+                                        V4L2_CID_MPEG_VIDEO_FRAME_RC_ENABLE,
+                                        V4L2_CTRL_CLASS_MPEG,
+                                        1);
+        if (ret)
+        {
+            av_log(avctx, AV_LOG_ERROR,
+                    "Failed to set frame-level rate control!\n");
+            ctx->in_error = true;
+        }
     }
     else
     {
