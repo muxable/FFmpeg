@@ -135,22 +135,21 @@ static int nvmpi_encode_frame(AVCodecContext *avctx, AVPacket *pkt,const AVFrame
 	nvPacket packet={0};
 	int res;
 
-	if (avctx->bit_rate != nvmpi_context->bit_rate) {
-		nvmpi_context->bit_rate = avctx->bit_rate;
-		res = nvmpi_encoder_set_bitrate(nvmpi_context->ctx, avctx->bit_rate);
-		if (res < 0) {
-			return res;
-		}
-	}
-
-    if (frame->pict_type == AV_PICTURE_TYPE_I) {
-		res = nvmpi_encoder_force_idr(nvmpi_context->ctx);
-		if (res < 0) {
-			return res;
-		}
-	}
-
 	if(frame){
+		if (avctx->bit_rate != nvmpi_context->bit_rate) {
+			nvmpi_context->bit_rate = avctx->bit_rate;
+			res = nvmpi_encoder_set_bitrate(nvmpi_context->ctx, avctx->bit_rate);
+			if (res < 0) {
+				return res;
+			}
+		}
+
+		if (frame->pict_type == AV_PICTURE_TYPE_I) {
+			res = nvmpi_encoder_force_idr(nvmpi_context->ctx);
+			if (res < 0) {
+				return res;
+			}
+		}
 
 		_nvframe.payload[0]=frame->data[0];
 		_nvframe.payload[1]=frame->data[1];
