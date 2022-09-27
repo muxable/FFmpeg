@@ -491,6 +491,7 @@ typedef struct OutputStream {
     char *forced_keyframes;
     AVExpr *forced_keyframes_pexpr;
     double forced_keyframes_expr_const_values[FKF_NB];
+    int forced_kf_interactive;
 
     /* audio only */
     int *audio_channels_map;             /* list of the channels id to pick from the source stream */

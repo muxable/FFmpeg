@@ -1259,6 +1259,13 @@ static void do_video_out(OutputFile *of,
                    && !i) {
             forced_keyframe = 1;
         }
+        else if (ost->forced_kf_interactive)
+        {
+            ost->forced_kf_interactive = 0;
+            forced_keyframe = 1;
+            av_log(NULL, AV_LOG_INFO, "Forced keyframe requested by user at frame %d (pts=%" PRId64 ")\n",
+                   ost->frame_number, in_picture->pts);
+        }
 
         if (forced_keyframe) {
             in_picture->pict_type = AV_PICTURE_TYPE_I;
@@ -3926,6 +3933,18 @@ static int check_keyboard_interaction(int64_t cur_time)
                    n, buf);
         }
     }
+    if (key == 'i')
+    {
+        av_log(NULL, AV_LOG_DEBUG, "Requesting keyframe for all streams");
+        for (i = 0; i < nb_output_streams; i++)
+        {
+            OutputStream *ost = output_streams[i];
+            if (ost->enc_ctx->codec_type == AVMEDIA_TYPE_VIDEO)
+            {
+                ost->forced_kf_interactive = 1;
+            }
+        }
+    }
     if (key == 'c' || key == 'C'){
         char buf[4096], target[64], command[256], arg[256] = {0};
         double time;
@@ -4007,6 +4026,7 @@ static int check_keyboard_interaction(int64_t cur_time)
                         "+      increase verbosity\n"
                         "-      decrease verbosity\n"
                         "b      set bitrate (in kbps)\n"
+                        "i      emit a keyframe\n"
                         "c      Send command to first matching filter supporting it\n"
                         "C      Send/Queue command to all matching filters\n"
                         "D      cycle through available debug modes\n"
