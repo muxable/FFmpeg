@@ -3890,6 +3890,42 @@ static int check_keyboard_interaction(int64_t cur_time)
             do_pkt_dump = 1;
         av_log_set_level(AV_LOG_DEBUG);
     }
+    if (key == 'b')
+    {
+        char buf[4096] = {0};
+        long kbps;
+        int k, n = 0;
+        fprintf(stderr, "\nEnter video bitrate in kbps: <bitrate>\n");
+        i = 0;
+        set_tty_echo(1);
+        while ((k = read_key()) != '\n' && k != '\r' && i < sizeof(buf) - 1)
+            if (k > 0)
+                buf[i++] = k;
+        buf[i] = 0;
+        set_tty_echo(0);
+        fprintf(stderr, "\n");
+        if (k > 0 &&
+            (n = sscanf(buf, "%ld[^\n]", &kbps)) >= 1)
+        {
+            av_log(NULL, AV_LOG_DEBUG, "Processing bitrate: %ld", kbps);
+            for (i = 0; i < nb_output_streams; i++)
+            {
+                OutputStream *ost = output_streams[i];
+                if (ost->enc_ctx->codec_type == AVMEDIA_TYPE_VIDEO)
+                {
+                    ost->enc_ctx->bit_rate = kbps * 1000;
+                    av_log(NULL, AV_LOG_DEBUG, "Setting bitrate for stream %d to %ld", i, kbps);
+                }
+            }
+        }
+        else
+        {
+            av_log(NULL, AV_LOG_ERROR,
+                   "Parse error, at least 1 argument was expected, "
+                   "only %d given in string '%s'\n",
+                   n, buf);
+        }
+    }
     if (key == 'c' || key == 'C'){
         char buf[4096], target[64], command[256], arg[256] = {0};
         double time;
@@ -3970,13 +4006,13 @@ static int check_keyboard_interaction(int64_t cur_time)
                         "?      show this help\n"
                         "+      increase verbosity\n"
                         "-      decrease verbosity\n"
+                        "b      set bitrate (in kbps)\n"
                         "c      Send command to first matching filter supporting it\n"
                         "C      Send/Queue command to all matching filters\n"
                         "D      cycle through available debug modes\n"
                         "h      dump packets/hex press to cycle through the 3 states\n"
                         "q      quit\n"
-                        "s      Show QP histogram\n"
-        );
+                        "s      Show QP histogram\n");
     }
     return 0;
 }
