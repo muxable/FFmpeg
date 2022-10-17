@@ -3,7 +3,7 @@ name: Build and Upload Debian Package
 on:
   push:
     branches:
-      - master
+      - muxable
   release:
     types: [released]
 
