@@ -1,0 +1,75 @@
+name: Build and Upload Debian Package
+
+on:
+  push:
+    branches:
+      - master
+  release:
+    types: [released]
+
+jobs:
+  deb:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: paulhatch/semantic-version@v4
+        id: semantic
+        with:
+          tag_prefix: ""
+          format: ${{ github.event_name == 'release' && '${major}.${minor}.${patch}' || '${major}.${minor}.${patch}-prerelease${increment}' }}
+      - uses: jiro4989/build-deb-action@v2
+        id: build
+        with:
+          package: muxable-nvidia-ffmpeg
+          package_root: ./build.nvidia
+          maintainer: Kevin Wang <kevin@muxable.com>
+          version: ${{ steps.semantic.outputs.version }}
+          depends: 'librtmp-dev, muxable-libnvmpi, muxable-libsrt, muxable-libwz265, libopus-dev'
+          arch: 'arm64'
+      - uses: actions/upload-artifact@v3
+        with:
+          name: nvidia-ffmpeg-arm64.deb
+          path: ${{ steps.build.outputs.file_name }}
+
+  unstable-deploy:
+    needs: deb
+    runs-on: ubuntu-latest
+    environment:
+      name: muxer-unstable
+      url: https://console.cloud.google.com/artifacts/apt/muxable/us-central1/muxer-unstable?project=muxable
+    concurrency: 
+      group: muxer-unstable-${{ github.ref }}
+    steps:
+      - uses: actions/download-artifact@v3
+        with:
+          name: nvidia-ffmpeg-arm64.deb
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v0
+        with:
+          credentials_json: ${{ secrets.MUXABLE_ARTIFACT_REGISTRY_SERVICE_ACCOUNT_JSON }}
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@v0
+      - name: Upload packages to Google Cloud unstable
+        run: ls *.deb | xargs -I{} gcloud artifacts apt upload muxer-unstable --location=us-central1 --source={}
+
+  stable-deploy:
+    if: github.event_name == 'release'
+    needs: deb
+    runs-on: ubuntu-latest
+    environment:
+      name: muxer-stable
+      url: https://console.cloud.google.com/artifacts/apt/muxable/us-central1/muxer-stable?project=muxable
+    concurrency: 
+      group: muxer-stable-${{ github.ref }}
+    steps:
+      - uses: actions/download-artifact@v3
+        with:
+          name: nvidia-ffmpeg-arm64.deb
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v0
+        with:
+          credentials_json: ${{ secrets.MUXABLE_ARTIFACT_REGISTRY_SERVICE_ACCOUNT_JSON }}
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@v0
+      - name: Upload packages to Google Cloud stable
+        run: ls *.deb | xargs -I{} gcloud artifacts apt upload muxer-stable --location=us-central1 --source={}
